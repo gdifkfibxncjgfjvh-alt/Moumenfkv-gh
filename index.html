@@ -103,6 +103,30 @@
         margin-top: 15px;
         height: 20px;
     }
+    /* شاشة عدم وجود انترنت */
+    #offlineContainer {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    #offlineContainer img {
+        width: 60px;
+        margin-bottom: 15px;
+    }
+    #offlineContainer p {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    #offlineContainer button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        background: #e0e0e0;
+        box-shadow: 4px 4px 8px #bebebe, -4px -4px 8px #ffffff;
+    }
 </style>
 <!-- مكتبة Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -140,8 +164,15 @@
     <div class="msg" id="signupMsg"></div>
 </div>
 
+<!-- واجهة عدم وجود إنترنت -->
+<div id="offlineContainer">
+    <img src="images/Cartoon-indifferent-image-emoticon-pack-mood-indifference-cartoon-images_184158_wh300.png" alt="No Internet">
+    <p>No Internet</p>
+    <button onclick="location.reload()">Retry</button>
+</div>
+
 <script>
-    // تسجيل الدخول التقليدي بكلمة مرور ثابتة
+    // تسجيل الدخول التقليدي
     function checkLogin() {
         const password = document.getElementById("password").value;
         const msg = document.getElementById("msg");
@@ -154,17 +185,14 @@
         }
     }
 
-    // تسجيل الدخول بحساب Google
+    // تسجيل الدخول بجوجل
     function handleCredentialResponse(response) {
         const data = parseJwt(response.credential);
         localStorage.setItem('googleEmail', data.email);
         localStorage.setItem('googleName', data.name);
 
-        // إظهار واجهة إنشاء الحساب
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("signupContainer").style.display = "flex";
-
-        // ملء اسم المستخدم تلقائياً
         document.getElementById("newUsername").value = data.name;
     }
 
@@ -183,18 +211,32 @@
         }
     }
 
-    // فك تشفير بيانات Google JWT
+    // فك تشفير JWT من جوجل
     function parseJwt(token) {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-            atob(base64)
-            .split('')
-            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        );
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
         return JSON.parse(jsonPayload);
     }
+
+    // التحقق من الاتصال بالانترنت
+    function checkConnection() {
+        if (navigator.onLine) {
+            document.getElementById("loginContainer").style.display = "flex";
+            document.getElementById("signupContainer").style.display = "none";
+            document.getElementById("offlineContainer").style.display = "none";
+        } else {
+            document.getElementById("loginContainer").style.display = "none";
+            document.getElementById("signupContainer").style.display = "none";
+            document.getElementById("offlineContainer").style.display = "flex";
+        }
+    }
+
+    window.addEventListener("online", checkConnection);
+    window.addEventListener("offline", checkConnection);
+    window.onload = checkConnection;
 </script>
 </body>
 </html>
