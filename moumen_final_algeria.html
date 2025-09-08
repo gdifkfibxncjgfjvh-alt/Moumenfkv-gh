@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moumen • Saad merabet</title>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+  :root{--bg:#f5f6f7;--card:#fff;--border:#e9ecef;--text:#111}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+  .navbar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;z-index:999}
+  .logo{font-size:24px}
+  .logo .light{font-weight:300;color:#000}
+  .logo .bold{font-weight:800;color:#000;margin-inline-start:3px}
+  .nav-icons .icon{cursor:pointer;font-size:20px;margin-inline-start:12px}
+  .side-menu{position:fixed;top:56px;right:-280px;width:280px;height:calc(100% - 56px);background:#fff;border-left:1px solid var(--border);
+    box-shadow:-2px 0 8px rgba(0,0,0,.06);transition:.25s;padding:10px;z-index:998;overflow:auto}
+  #main{padding:10px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:10px 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .btn{background:#fff;border:1px solid #ccc;border-radius:14px;padding:10px 14px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.04);transition:.2s}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.08)}
+  .primary{background:#111;color:#fff;border-color:#111}
+  .badge{font-size:11px;color:#0077ff;margin-left:6px}
+  #loginDiv{display:none;min-height:calc(100dvh - 56px);display:flex;align-items:center;justify-content:center}
+  .login-card{width:min(420px,92%);background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px}
+  .offline-box{text-align:center}
+  .offline-box img{width:60px;height:auto;display:block;margin:0 auto 10px}
+  .offline-box .title{font-size:18px;margin:6px 0 10px}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="logo"><span class="light">Saad</span><span class="bold">merabet</span></div>
+  <div class="nav-icons">
+    <span class="icon" id="icon-home">🏠</span>
+    <span class="icon" id="icon-chat">💬</span>
+    <span class="icon" id="icon-menu">☰</span>
+  </div>
+</div>
+
+<!-- شاشة الأوفلاين -->
+<section id="offline" style="display:none;height:100dvh;display:flex;align-items:center;justify-content:center;background:#fff">
+  <div class="offline-box">
+    <img alt="offline" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iMzUiIGN5PSI0MCIgcj0iMTUiIHN0cm9rZT0iI2IyYjJiMiIgc3Ryb2tlLXdpZHRoPSI0IiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI0MCIgcj0iMTUiIHN0cm9rZT0iI2IyYjJiMiIgc3Ryb2tlLXdpZHRoPSI0IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTMwIDY1IEM0MCA3MCA2MCA3MCA3MCA2NSIgc3Ryb2tlPSIjYjJiMmIyIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==" />
+    <div class="title">No Internet</div>
+    <button class="btn primary" onclick="location.reload()">Retry</button>
+  </div>
+</section>
+
+<!-- تسجيل الدخول -->
+<section id="loginDiv">
+  <div class="login-card">
+    <h3>تسجيل الدخول</h3>
+    <div id="googleSignInDiv" style="margin:10px 0;"></div>
+    <input id="email" placeholder="البريد أو اسم المستخدم"><br><br>
+    <input id="password" type="password" placeholder="كلمة المرور"><br><br>
+    <button class="btn primary" onclick="loginManual()">تسجيل الدخول يدويًا</button>
+  </div>
+</section>
+
+<div id="app" style="display:none;">
+  <div id="sideMenu" class="side-menu"></div>
+  <main id="main"></main>
+</div>
+
+<script>
+const DEV_EMAIL = "moumen1392007@gmail.com";
+const GOOGLE_CLIENT_ID = "330919955917-lceq157045os9fv5f9ehuo0hidu856q1.apps.googleusercontent.com";
+
+let currentUser=null, users=[], posts=[], chatMessages=[];
+
+/* اتصال الإنترنت */
+function updateOnlineUI(){
+  if(navigator.onLine){
+    document.getElementById('offline').style.display='none';
+    document.getElementById('loginDiv').style.display='flex';
+  }else{
+    document.getElementById('loginDiv').style.display='none';
+    document.getElementById('app').style.display='none';
+    document.getElementById('offline').style.display='flex';
+  }
+}
+window.addEventListener('online',updateOnlineUI);
+window.addEventListener('offline',updateOnlineUI);
+
+/* Google Login */
+window.addEventListener('load',()=>{
+  updateOnlineUI();
+  if(typeof google!=='undefined'){
+    google.accounts.id.initialize({
+      client_id:GOOGLE_CLIENT_ID,
+      callback:handleCredentialResponse
+    });
+    google.accounts.id.renderButton(
+      document.getElementById("googleSignInDiv"),
+      { theme:"outline", size:"large" }
+    );
+  }
+});
+function parseJwt(t){var b=t.split('.')[1];var d=atob(b.replace(/-/g,'+').replace(/_/g,'/'));return JSON.parse(decodeURIComponent(d.split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));}
+function handleCredentialResponse(r){
+  const data=parseJwt(r.credential);
+  const email=(data.email||'').toLowerCase();
+  if(email===DEV_EMAIL.toLowerCase()){
+    currentUser={username:"moumen",email:email,role:"developer",sh3ba:null};
+    if(!users.find(u=>u.email===email)) users.push(currentUser);
+  }else{
+    currentUser=registerUser(email);
+  }
+  afterLogin();
+}
+function loginManual(){
+  const val=document.getElementById('email').value.trim();
+  if(!val) return;
+  if(val.toLowerCase()===DEV_EMAIL.toLowerCase()){
+    currentUser={username:"moumen",email:val,role:"developer",sh3ba:null};
+    if(!users.find(u=>u.email===val)) users.push(currentUser);
+  }else{
+    const email=val.includes('@')?val:(val+"@local");
+    currentUser=registerUser(email);
+    currentUser.username=val.includes('@')?email.split('@')[0]:val;
+  }
+  afterLogin();
+}
+function afterLogin(){
+  document.getElementById('loginDiv').style.display='none';
+  document.getElementById('app').style.display='block';
+  showHome();
+}
+function registerUser(email){
+  let u=users.find(x=>x.email===email);
+  if(!u){u={username:email.split("@")[0],email:email,role:"member",sh3ba:null};users.push(u);}
+  return u;
+}
+
+/* باقي الدوال: toggleMenu, sh3baPicker, showHome, showMessenger ... (نفس النسخة السابقة مع الشعب الجزائرية) */
+</script>
+</body>
+</html>
