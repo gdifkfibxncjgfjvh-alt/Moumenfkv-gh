@@ -1,0 +1,496 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Saad merabet</title>
+
+<!-- مكتبة Google Sign-In -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+  :root{
+    --bg:#f0f2f5; --card:#fff; --text:#111; --muted:#666; --primary:#1877f2;
+    --shadow:0 1px 4px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+  /* ====== صفحة الدخول القديمة (مُحسّنة) ====== */
+  #loginShell{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f6f7f9,#eef1f5)}
+  .login-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:18px 16px;width:min(92vw,420px);text-align:center}
+  .brand{font-weight:900;font-size:26px;letter-spacing:.2px;color:#000;margin-bottom:4px}
+  .muted{color:var(--muted);font-size:13px}
+  .divider{height:1px;background:#eee;margin:12px 0}
+  /* شاشة لا إنترنت */
+  #offlineWrap{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#fafafa}
+  .offline-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:22px 18px;text-align:center;width:min(92vw,420px)}
+  .offline-img{width:60px;height:60px;display:block;margin:0 auto 10px auto}
+  .btn{border:none;border-radius:10px;padding:9px 14px;cursor:pointer;background:#eee}
+  .btn.primary{background:var(--primary);color:#fff}
+  .row{display:flex;align-items:center;gap:10px}
+  .avatar{width:40px;height:40px;border-radius:50%;object-fit:cover}
+  .small{width:28px;height:28px}
+  /* ====== التطبيق ====== */
+  header{position:sticky;top:0;z-index:5;background:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;padding:10px 12px}
+  .logo{font-weight:900;font-size:22px;letter-spacing:.2px;color:#000}
+  .nav{display:flex;align-items:center;gap:6px}
+  .icon-btn{font-size:18px;line-height:1}
+  main{max-width:980px;margin:18px auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;padding:0 10px}
+  .card{background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
+  .side h3{margin:6px 0 10px}
+  .badge{font-size:12px;color:#888;margin-inline-start:6px}
+  .list-gap>*{margin-top:10px}
+  textarea{width:100%;min-height:68px;border:1px solid #ddd;border-radius:10px;padding:8px;resize:vertical}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .pill{padding:8px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;cursor:pointer}
+  .pill.active{background:#111;color:#fff;border-color:#111}
+  .menu-toggle{display:none}
+  .sh3ba-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .sh3ba-btn{padding:14px;border-radius:12px;border:1px solid #ddd;background:#fff;cursor:pointer;box-shadow:var(--shadow);text-align:center}
+  .sh3ba-btn:hover{transform:translateY(-1px)}
+  .chat-box{height:55vh;overflow:auto;border:1px solid #eee;border-radius:10px;padding:10px;background:#fafafa}
+  .bubble{background:#fff;border-radius:12px;padding:8px;box-shadow:var(--shadow);margin:6px 0}
+  .chat-input{display:flex;gap:8px;align-items:center}
+  .chat-input input{flex:1;border:1px solid #ddd;border-radius:8px;padding:8px}
+  .role-select{border:1px solid #ddd;border-radius:8px;padding:6px}
+  #navUserBox{display:flex;align-items:center;gap:8px;cursor:pointer}
+  @media (max-width:900px){
+    main{grid-template-columns:1fr}
+    .side{order:2}
+    .feed{order:1}
+    .menu-toggle{display:inline-flex}
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== شاشة لا إنترنت (جزء من التصميم القديم) ====== -->
+<div id="offlineWrap">
+  <div class="offline-card">
+    <!-- صورة صغيرة جدًا 60px -->
+    <img class="offline-img" alt="No Internet"
+      src="data:image/svg+xml;utf8,
+      <svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'>
+        <path d='M16.72 5.78A10.94 10.94 0 0 0 12 5C7.03 5 3 9.03 3 14' />
+        <path d='M1 1l22 22'/>
+        <path d='M22 16a5 5 0 0 0-8.66-3.54'/>
+        <path d='M12 20h9'/>
+      </svg>"/>
+    <!-- نص "No Internet" -->
+    <div style="font-weight:bold;margin:6px 0 10px 0">No Internet</div>
+    <!-- زر Retry -->
+    <button class="btn primary" onclick="location.reload()">Retry</button>
+  </div>
+</div>
+
+<!-- ====== صفحة الدخول القديمة (مُحافظة على الشكل العام) ====== -->
+<div id="loginShell">
+  <div class="login-card">
+    <div class="brand">Saad merabet</div>
+    <div class="muted">سجّل دخولك بحساب Google للمتابعة</div>
+    <div class="divider"></div>
+
+    <!-- Google Sign-In (استبدال الفورم القديم) -->
+    <div id="g_id_onload"
+      data-client_id="330919955917-lceq157045os9fv5f9ehuo0hidu856q1.apps.googleusercontent.com"
+      data-callback="handleCredentialResponse"
+      data-auto_prompt="false"></div>
+    <div class="g_id_signin" data-type="standard"></div>
+
+    <div class="divider"></div>
+    <div class="muted">إذا انقطع الإنترنت ستظهر شاشة بديلة تلقائيًا مع زر Retry.</div>
+  </div>
+</div>
+
+<!-- ====== التطبيق ====== -->
+<div id="app" style="display:none">
+  <header>
+    <div class="row">
+      <button class="btn menu-toggle" onclick="toggleSide()">☰</button>
+      <div class="logo">Saad merabet</div>
+    </div>
+    <div class="nav">
+      <button class="btn icon-btn" id="homeBtn" title="الرئيسية" onclick="showHome()">🏠</button>
+      <button class="btn icon-btn" id="chatBtn" title="المحادثة" onclick="showMessenger()">💬</button>
+      <div id="navUserBox" title="غيّر الصورة"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- جانب -->
+    <aside class="side" id="sideMenu">
+      <div class="card">
+        <h3>الشعبة</h3>
+        <div id="sh3baBlock"></div>
+      </div>
+
+      <div class="card" id="developerPanel" style="display:none">
+        <h3>لوحة المطوّر</h3>
+        <div class="muted">إدارة المستخدمين</div>
+        <div class="list-gap" id="adminPending"></div>
+        <hr>
+        <div class="muted">الموافق عليهم</div>
+        <div class="list-gap" id="adminActive"></div>
+        <hr>
+        <div class="muted">المحظورون</div>
+        <div class="list-gap" id="adminBanned"></div>
+      </div>
+    </aside>
+
+    <!-- التغذية -->
+    <section class="feed">
+      <div class="tabs">
+        <div class="pill active" id="tab-home" onclick="showHome()">الرئيسية</div>
+        <div class="pill" id="tab-chat" onclick="showMessenger()">الرسائل</div>
+      </div>
+      <div id="main"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ================== حالة عامة ================== */
+const DEV_EMAIL = "moumen1392007@gmail.com";
+
+function $(id){ return document.getElementById(id); }
+function saveState(){ try{ localStorage.setItem("APP_STATE_V3", JSON.stringify(state)); }catch(e){} }
+function loadState(){
+  try{ const raw = localStorage.getItem("APP_STATE_V3"); if(raw) return JSON.parse(raw); }catch(e){}
+  return { users:[], posts:[], messages:[], lastId:0, sh3bas:[
+    "علوم تجريبية","رياضيات","تقني رياضي","تسيير واقتصاد","آداب وفلسفة","لغات أجنبية"
+  ]};
+}
+function uid(){ state.lastId=(state.lastId||0)+1; return state.lastId; }
+
+let state = loadState();
+let currentUser = null;
+
+/* ================== كشف الإنترنت ================== */
+function reflectOnlineStatus(){
+  const online = navigator.onLine;
+  $('offlineWrap').style.display = online ? 'none' : 'flex';
+  $('loginShell').style.display  = online ? 'flex' : 'none';
+  $('app').style.display         = 'none'; // لا نُظهر المنصة إذا لم نتأكد من الجلسة
+}
+window.addEventListener('online', reflectOnlineStatus);
+window.addEventListener('offline', reflectOnlineStatus);
+
+/* ================== Google Sign-In ================== */
+function handleCredentialResponse(response){
+  const data = parseJwt(response.credential);
+  const email = data.email || "";
+  const name  = data.name  || email.split("@")[0];
+  const pic   = data.picture || "https://www.gravatar.com/avatar/?d=mp&s=120";
+
+  let u = state.users.find(x=>x.email===email);
+  if(!u){
+    u = {
+      id: uid(),
+      email,
+      username: name,
+      avatar: pic,
+      role: (email===DEV_EMAIL) ? "developer" : "member",
+      sh3ba: null,
+      verified: (email===DEV_EMAIL),
+      status: (email===DEV_EMAIL) ? "active" : "pending"
+    };
+    state.users.push(u); saveState();
+  }
+  currentUser = {...u};
+  // خزّن آخر بريد لتجاوز إعادة تسجيل الدخول بعد التحديث
+  try{ localStorage.setItem("LAST_EMAIL", currentUser.email); }catch(e){}
+
+  if(currentUser.status==="banned") return showBanned();
+  if(currentUser.status==="pending") return showPending();
+
+  $('loginShell').style.display='none';
+  $('app').style.display='block';
+  updateNavbarUser();
+  renderSide();
+  showHome();
+}
+
+function parseJwt(token){
+  let base64Url = token.split('.')[1];
+  let base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
+  let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c){
+    return '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
+
+/* ================== شاشات الحالة ================== */
+function showPending(){
+  document.body.innerHTML = `
+    <div id="offlineWrap" style="display:none"></div>
+    <div class="center" style="min-height:100vh;display:flex;align-items:center;justify-content:center">
+      <div class="card" style="max-width:460px;text-align:center">
+        <h2>طلبك قيد المراجعة ⏳</h2>
+        <p>سيقوم المطور بمراجعة طلبك قريبًا.</p>
+        <button class="btn" onclick="location.reload()">تحديث</button>
+      </div>
+    </div>`;
+}
+function showBanned(){
+  document.body.innerHTML = `
+    <div id="offlineWrap" style="display:none"></div>
+    <div class="center" style="min-height:100vh;display:flex;align-items:center;justify-content:center">
+      <div class="card" style="max-width:460px;text-align:center">
+        <h2>🚫 تم حظرك</h2>
+        <p>لا يمكنك الدخول بهذا الحساب.</p>
+        <button class="btn" onclick="location.reload()">رجوع</button>
+      </div>
+    </div>`;
+}
+
+/* ================== Navbar المستخدم ================== */
+function updateNavbarUser(){
+  const box = $('navUserBox'); if(!box || !currentUser) return;
+  box.onclick = changeAvatar;
+  box.innerHTML = `
+    <img class="avatar small" src="${getAvatar(currentUser)}">
+    <span><b>${escapeHtml(currentUser.username)}</b>${currentUser.verified?'<span class="badge">✓</span>':''}</span>
+  `;
+}
+function getAvatar(u){ return (u && u.avatar) ? u.avatar : "https://www.gravatar.com/avatar/?d=mp&s=120"; }
+function changeAvatar(){
+  if(!currentUser) return;
+  const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange = e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload = ev=>{
+      currentUser.avatar = ev.target.result;
+      const u = state.users.find(x=>x.email===currentUser.email);
+      if(u) u.avatar = currentUser.avatar;
+      saveState(); updateNavbarUser(); renderSide();
+    };
+    r.readAsDataURL(f);
+  };
+  inp.click();
+}
+
+/* ================== جانب: الشعبة + لوحة المطوّر ================== */
+function renderSide(){
+  // اختيار/عرض الشعبة
+  const block = $('sh3baBlock'); if(!block) return;
+  if(!currentUser.sh3ba){
+    block.innerHTML = `
+      <div class="muted" style="margin-bottom:6px">اختر شعبة الانضمام</div>
+      <div class="sh3ba-grid">
+        ${state.sh3bas.map(s=>`<button class="sh3ba-btn" onclick="selectSh3ba('${s}')">${s}</button>`).join('')}
+      </div>`;
+  }else{
+    block.innerHTML = `
+      <div class="row">
+        <img class="avatar small" src="${getAvatar(currentUser)}">
+        <div>
+          <div><b>${escapeHtml(currentUser.username)}</b>${currentUser.verified?'<span class="badge">✓</span>':''}</div>
+          <div class="muted">شعبتك: ${currentUser.sh3ba}</div>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:8px" onclick="changeSh3ba()">تغيير الشعبة</button>`;
+  }
+
+  // لوحة المطوّر
+  const panel = $('developerPanel');
+  if(currentUser.role==='developer'){
+    panel.style.display='block';
+    renderAdmin();
+  }else{
+    panel.style.display='none';
+  }
+}
+
+function selectSh3ba(s){
+  currentUser.sh3ba = s;
+  const u = state.users.find(x=>x.email===currentUser.email);
+  if(u) u.sh3ba = s; saveState();
+  renderSide(); showHome();
+}
+function changeSh3ba(){
+  currentUser.sh3ba = null;
+  const u = state.users.find(x=>x.email===currentUser.email);
+  if(u) u.sh3ba = null; saveState();
+  renderSide(); showHome();
+}
+
+/* ================== لوحة المطوّر ================== */
+function renderAdmin(){
+  const P=$('adminPending'), A=$('adminActive'), B=$('adminBanned');
+  const pend=state.users.filter(u=>u.status==='pending');
+  const act =state.users.filter(u=>u.status==='active');
+  const ban =state.users.filter(u=>u.status==='banned');
+
+  function line(u,controls){
+    return `
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div class="row">
+          <img class="avatar small" src="${getAvatar(u)}">
+          <div>
+            <div><b>${escapeHtml(u.username)}</b>${u.verified?'<span class="badge">✓</span>':''} <span class="badge">${u.role||'member'}</span></div>
+            <div class="muted">${u.email}</div>
+            ${u.sh3ba?`<div class="muted">شعبة: ${u.sh3ba}</div>`:''}
+          </div>
+        </div>
+        <div class="row">${controls}</div>
+      </div>`;
+  }
+
+  P.innerHTML = pend.map(u=>line(u, `
+    <button class="btn" onclick="approveUser('${u.email}')">موافقة ✅</button>
+    <button class="btn" onclick="banUser('${u.email}')">حظر ❌</button>
+  `)).join('') || '<div class="muted">لا يوجد</div>';
+
+  A.innerHTML = act.map(u=>line(u, `
+    <select class="role-select" onchange="setRole('${u.email}', this.value)">
+      <option value="member" ${u.role==='member'?'selected':''}>عضو</option>
+      <option value="publisher" ${u.role==='publisher'?'selected':''}>ناشر</option>
+      <option value="moderator" ${u.role==='moderator'?'selected':''}>مشرف الشعبة</option>
+      <option value="developer" ${u.role==='developer'?'selected':''}>مطوّر</option>
+    </select>
+    <button class="btn" onclick="toggleVerify('${u.email}')">${u.verified?'إلغاء التوثيق':'توثيق ✓'}</button>
+    <button class="btn" onclick="banUser('${u.email}')">حظر ❌</button>
+  `)).join('') || '<div class="muted">لا يوجد</div>';
+
+  B.innerHTML = ban.map(u=>line(u, `
+    <button class="btn" onclick="unbanUser('${u.email}')">إلغاء الحظر ↩️</button>
+  `)).join('') || '<div class="muted">لا يوجد</div>';
+}
+
+function approveUser(email){ const u=state.users.find(x=>x.email===email); if(!u) return; u.status='active'; saveState(); renderAdmin(); }
+function banUser(email){ const u=state.users.find(x=>x.email===email); if(!u) return; u.status='banned'; saveState(); renderAdmin(); }
+function unbanUser(email){ const u=state.users.find(x=>x.email===email); if(!u) return; u.status='active'; saveState(); renderAdmin(); }
+function setRole(email,role){ const u=state.users.find(x=>x.email===email); if(!u) return; u.role=role; saveState(); renderAdmin(); }
+function toggleVerify(email){ const u=state.users.find(x=>x.email===email); if(!u) return; u.verified=!u.verified; saveState(); renderAdmin(); }
+
+/* ================== الرئيسية (المنشورات) ================== */
+function showHome(){
+  setActiveTab('home');
+  if(!currentUser) return;
+  if(!currentUser.sh3ba){
+    $('main').innerHTML = `
+      <div class="card">
+        <h3>اختيار الشعبة</h3>
+        <div class="sh3ba-grid">${state.sh3bas.map(s=>`<button class="sh3ba-btn" onclick="selectSh3ba('${s}')">${s}</button>`).join('')}</div>
+      </div>`;
+    return;
+  }
+  renderPosts(currentUser.sh3ba);
+}
+function sendPost(sh3ba){
+  const t=$('postInput').value.trim(); if(!t) return;
+  state.posts.unshift({id:uid(),sh3ba,userEmail:currentUser.email,text:t,ts:Date.now()});
+  saveState(); $('postInput').value=''; renderPosts(sh3ba);
+}
+function renderPosts(sh3ba){
+  $('main').innerHTML = `
+    <div class="card">
+      <h3>📢 منشورات — ${sh3ba}</h3>
+      <div id="postList" class="list-gap"></div>
+      <div class="card">
+        <textarea id="postInput" placeholder="ماذا تريد أن تكتب؟"></textarea>
+        <div style="margin-top:8px"><button class="btn primary" onclick="sendPost('${sh3ba}')">نشر</button></div>
+      </div>
+    </div>`;
+  const list=$('postList');
+  const posts=state.posts.filter(p=>p.sh3ba===sh3ba).sort((a,b)=>b.ts-a.ts);
+  list.innerHTML = posts.map(p=>{
+    const u=state.users.find(x=>x.email===p.userEmail)||{username:'مستخدم',avatar:null,verified:false,role:'member'};
+    return `
+      <div class="card row" style="align-items:flex-start">
+        <img class="avatar" src="${getAvatar(u)}">
+        <div>
+          <div><b>${escapeHtml(u.username)}</b>${u.verified?'<span class="badge">✓</span>':''} <span class="badge">${u.role||''}</span></div>
+          <div class="muted" style="font-size:12px">${formatTime(p.ts)}</div>
+          <div style="margin-top:6px">${escapeHtml(p.text)}</div>
+        </div>
+      </div>`;
+  }).join('') || '<div class="muted">لا توجد منشورات بعد…</div>';
+}
+
+/* ================== المحادثة ================== */
+function showMessenger(){
+  setActiveTab('chat');
+  if(!currentUser) return;
+  if(!currentUser.sh3ba){
+    $('main').innerHTML = `
+      <div class="card">
+        <h3>اختر الشعبة للانضمام إلى محادثتها</h3>
+        <div class="sh3ba-grid">${state.sh3bas.map(s=>`<button class="sh3ba-btn" onclick="selectSh3ba('${s}')">${s}</button>`).join('')}</div>
+      </div>`;
+    return;
+  }
+  const my=currentUser.sh3ba;
+  const msgs=state.messages.filter(m=>m.sh3ba===my).sort((a,b)=>a.ts-b.ts);
+
+  $('main').innerHTML = `
+    <div class="card">
+      <h3>💬 محادثة — قروب ${my}</h3>
+      <div class="chat-box" id="chatBox">
+        ${msgs.map(m=>{
+          const u=state.users.find(x=>x.email===m.userEmail)||{username:m.userEmail,avatar:null,verified:false,role:'member'};
+          return `
+            <div class="bubble">
+              <div class="row">
+                <img class="avatar small" src="${getAvatar(u)}">
+                <b>${escapeHtml(u.username)}</b>${u.verified?'<span class="badge">✓</span>':''}
+                <span class="badge">${u.role||''}</span>
+                <span class="muted" style="margin-inline-start:auto;font-size:12px">${formatTime(m.ts)}</span>
+              </div>
+              <div style="margin-top:6px">${escapeHtml(m.text)}</div>
+            </div>`;
+        }).join('') || '<div class="muted">ابدأوا الدردشة الآن…</div>'}
+      </div>
+      <div class="card chat-input" style="margin-top:8px">
+        <input id="msgInput" placeholder="اكتب رسالة…">
+        <button class="btn primary" onclick="sendMsg()">إرسال</button>
+      </div>
+    </div>`;
+  const box=$('chatBox'); box.scrollTop=box.scrollHeight;
+}
+function sendMsg(){
+  const inp=$('msgInput'); if(!inp||!currentUser) return;
+  const txt=(inp.value||"").trim(); if(!txt) return;
+  state.messages.push({id:uid(),sh3ba:currentUser.sh3ba,userEmail:currentUser.email,text:txt,ts:Date.now()});
+  saveState(); inp.value=''; showMessenger();
+}
+
+/* ================== أدوات واجهة ================== */
+function setActiveTab(which){
+  const h=$('tab-home'), c=$('tab-chat'); if(!h||!c) return;
+  if(which==='home'){ h.classList.add('active'); c.classList.remove('active'); }
+  else{ c.classList.add('active'); h.classList.remove('active'); }
+}
+function toggleSide(){
+  const side=$('sideMenu'); if(!side) return;
+  side.style.display = (side.style.display==='none'?'block':'none');
+}
+function escapeHtml(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function formatTime(ts){
+  try{ const d=new Date(ts); return d.toLocaleString('ar-DZ',{hour12:false}); }catch(e){ return ''; }
+}
+
+/* ================== استرجاع الجلسة + بدء ================== */
+document.addEventListener('DOMContentLoaded', ()=>{
+  reflectOnlineStatus();
+
+  // إن كان هناك مستخدم active محفوظ سابقًا، ندخله مباشرة (بدون إعادة نداء Google)
+  try{
+    const last = localStorage.getItem("LAST_EMAIL");
+    if(last){
+      const u = state.users.find(x=>x.email===last && x.status==='active');
+      if(u){
+        currentUser = {...u};
+        $('loginShell').style.display='none';
+        $('app').style.display='block';
+        updateNavbarUser(); renderSide(); showHome();
+      }
+    }
+  }catch(e){}
+});
+</script>
+
+</body>
+</html>
